@@ -1,0 +1,121 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Templated Mail Editor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+  <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+  <script src="editor.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/1.3.3/webcomponents-lite.js" integrity="sha256-SfZB7DkRBWLN5lydxA411IbUbnptiQPcjFlNFGPV7Go=" crossorigin="anonymous"></script>
+  <link rel="import" href="juicy-ace-editor.html">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.6/handlebars.js" integrity="sha256-ZafrO8ZXERYO794Tx1hPaAcdcXNZUNmXufXOSe0Hxj8=" crossorigin="anonymous"></script>
+  <style>
+    html,body, .all-height {
+      height: 100%
+    }
+  </style>
+</head>
+
+<body>
+<div id="elm"></div>
+<script>
+
+    function render(template, parameters)
+    {
+        const compiledTemplate = Handlebars.compile(template);
+        return compiledTemplate(JSON.parse(parameters));
+    }
+
+    customElements.define('handlebars-html-iframe',
+        class extends HTMLIFrameElement {
+            constructor() {
+                super();
+            }
+            connectedCallback() {
+                this.setIFrame();
+            }
+            attributeChangedCallback() {
+                this.setIFrame();
+            }
+
+            static get observedAttributes() { return ['template','parameters']; }
+
+            // Our function to set the textContent based on attributes.
+            setIFrame()
+            {
+                const template = this.getAttribute('template');
+                const parameters = this.getAttribute('parameters');
+                console.log("Rendering with parameters: " + parameters);
+                this.srcdoc = render(template, parameters);
+                this.frameBorder = "0";
+                this.allowFullscreen = true;
+                this.width = "100%"
+                this.height = "100%"
+            }
+        },
+        { extends: 'iframe' }
+    );
+
+    customElements.define('handlebars-html-iframe2',
+        class extends HTMLElement {
+            constructor() {
+                super();
+            }
+            connectedCallback() {
+                this.setIFrame();
+            }
+            attributeChangedCallback() {
+                this.setIFrame();
+            }
+
+            static get observedAttributes() { return ['template','parameters']; }
+
+            // We put the iframe into a child just to make our lives easier.
+            setIFrame()
+            {
+                const template = this.getAttribute('template');
+                const parameters = this.getAttribute('parameters');
+                console.log("Rendering with parameters: " + parameters);
+                const first = this.firstChild;
+                if (first == null) {
+                  const iframe = document.createElement("iframe");
+                  iframe.srcdoc = render(template, parameters);
+                  iframe.frameBorder = "0";
+                  iframe.allowFullscreen = true;
+                  iframe.width = "100%"
+                  iframe.height = "100%"
+                  this.appendChild(iframe);
+                } else {
+                    console.log("just setting the srcdoc");
+                    first.srcdoc = render(template, parameters);
+                }
+            }
+        }
+    );
+
+    customElements.define('handlebars-text',
+        class extends HTMLElement {
+            // things required by Custom Elements
+            constructor() { super(); }
+            connectedCallback() { this.setTextContent(); }
+            attributeChangedCallback() { this.setTextContent(); }
+            static get observedAttributes() { return ['template','parameters']; }
+
+            // Our function to set the textContent based on attributes.
+            setTextContent()
+            {
+                const template = this.getAttribute('template');
+                const parameters = this.getAttribute('parameters');
+                console.log("Rendering with parameters: " + parameters);
+                this.textContent = render(template, parameters);
+            }
+        }
+    );
+
+    var app = Elm.Editor.init({
+        node: document.getElementById('elm')
+    });
+</script>
+</body>
+</html>

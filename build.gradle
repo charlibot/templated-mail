@@ -1,0 +1,55 @@
+plugins {
+  id 'java'
+  id 'org.springframework.boot' version '2.2.6.RELEASE'
+  id 'com.google.cloud.tools.jib' version '2.1.0'
+  id "org.openapi.generator" version "4.3.0"
+  id "io.freefair.lombok" version "4.1.6"
+}
+
+apply plugin: 'java'
+apply plugin: 'io.spring.dependency-management'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web'
+  implementation group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
+
+  implementation group: 'com.github.spullara.mustache.java', name: 'compiler', version: '0.9.6'
+  implementation group: 'com.sendgrid', name: 'sendgrid-java', version: '4.4.7'
+  implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'
+  implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+  implementation group: 'org.openapitools', name: 'jackson-databind-nullable', version: '0.2.0'
+}
+
+task generateTemplatedMailServer(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName = "spring"
+  inputSpec = "$rootDir/src/main/resources/templated-mail.yaml"
+  outputDir = "${buildDir}/generated/sources/templated-mail-server"
+  apiPackage = "com.charlibot.templated.mail"
+  generateModelTests = false
+  generateModelDocumentation = false
+  generateApiTests = false
+  generateApiDocumentation = false
+  configOptions = [
+          dateLibrary         : "java8",
+          library             : "spring-boot",
+          apiPackage          : "com.charlibot.templated.mail.api",
+          invokerPackage      : "com.charlibot.templated.mail",
+          modelPackage        : "com.charlibot.templated.mail.model",
+          returnSuccessCode   : "true",
+          delegatePattern     : "true",
+          generateSupportingFiles: "false"
+  ]
+  systemProperties = [
+          apis: "",
+          models: "",
+          supportingFiles: "ApiUtil.java"
+  ]
+}
+
+sourceSets.main.java.srcDirs += "${buildDir}/generated/sources/templated-mail-server/src/main/java"
+
+compileJava.dependsOn tasks.generateTemplatedMailServer

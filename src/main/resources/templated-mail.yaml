@@ -1,0 +1,352 @@
+openapi: 3.0.2
+info:
+  title: Templated Mail API
+  description: 'Templated Mail API. Inspired by https://raw.githubusercontent.com/jonathan-kosgei/postmark/master/swagger.yml'
+  version: 1.0.0
+servers:
+  - url: https://where.am.i
+tags:
+  - name: templates
+    description: ...
+  - name: sending
+    description: ...
+  - name: renderings
+    description: ...
+paths:
+  /email/withTemplate:
+    post:
+      operationId: sendEmailWithTemplate
+      tags:
+        - sending
+        - templates
+      summary: Send an email using a Template
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailWithTemplateRequest'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailResponse'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+  /templates:
+    get:
+      operationId: listTemplates
+      summary: Get the Templates associated with this Server
+      tags:
+        - templates
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateListingResponse'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+    post:
+      summary: Create a Template
+      operationId: createTemplate
+      tags:
+        - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateDetailResponse'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+  /templates/{templateId}:
+    get:
+      operationId: getSingleTemplate
+      summary: Get a Template
+      parameters:
+        - name: templateId
+          in: path
+          schema:
+            type: integer
+          required: true
+          description: The ID for the Template you wish to retrieve.
+      tags:
+        - templates
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateDetailResponse'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+    put:
+      operationId: updateTemplate
+      summary: Update a template
+      parameters:
+        - name: templateId
+          in: path
+          schema:
+            type: integer
+          required: true
+          description: The ID for the Template you wish to retrieve.
+      tags:
+        - templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTemplateRequest'
+      responses:
+        # TODO: Are these responses ok?
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateDetailResponse'
+        422:
+          $ref: '#/components/responses/422'
+        500:
+          $ref: '#/components/responses/500'
+  /v1.0/renderings/{templateAlias}:
+    put:
+      operationId: renderings
+      summary: Render a template
+      parameters:
+        - name: templateAlias
+          in: path
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
+      tags:
+        - renderings
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailRenderResponse'
+components:
+  responses:
+    422:
+      description: 'An error was generated due to incorrect use of the API. See the Message associated with this response for more information.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardResponse'
+    500:
+      description: 'Indicates an internal server error occurred.'
+  schemas:
+    EmailWithTemplateRequest:
+      properties:
+        templateId:
+          type: integer
+        templateModel:
+          type: object
+        to:
+          type: string
+        from:
+          type: string
+      required:
+        - templateId
+        - templateModel
+        - to
+        - from
+    SendEmailResponse:
+      description: The standard response when a message is sent
+      properties:
+        to:
+          type: string
+        submittedAt:
+          type: string
+          format: 'date-time'
+        messageID:
+          type: string
+    CreateTemplateRequest:
+      description: The contents required for creating a new template.
+      properties:
+        name:
+          type: string
+          description: The friendly display name for the template.
+        subject:
+          type: string
+          description: The Subject template definition for this Template.
+        htmlBody:
+          type: string
+          description: The HTML template definition for this Template.
+        textBody:
+          type: string
+          description: The Text template definition for this Template.
+        alias:
+          type: string
+          description: Alias of the template. Used when using renderings api
+      required:
+        - name
+        - subject
+        - textBody
+        - htmlBody
+      example:
+        name: "Onboarding Email"
+        subject: "Hello from {{company.name}}!"
+        htmlBody: "<html><body>Hello, {{name}}!</body></html>"
+        textBody: "Hello, {{name}}!"
+    UpdateTemplateRequest:
+      description: The contents required for updating an existing template.
+      properties:
+        name:
+          type: string
+          description: The friendly display name for the template.
+        subject:
+          type: string
+          description: The Subject template definition for this Template.
+        htmlBody:
+          type: string
+          description: The HTML template definition for this Template.
+        textBody:
+          type: string
+          description: The Text template definition for this Template.
+      required:
+        - name
+        - subject
+        - textBody
+        - htmlBody
+      example:
+        name: "Onboarding Email"
+        subject: "Hello from {{company.name}}!"
+        htmlBody: "<html><body>Hello, {{name}}!</body></html>"
+        textBody: "Hello, {{name}}!"
+    TemplateListingResponse:
+      properties:
+        totalCount:
+          type: integer
+          description: The total number of Templates API associated with this server.
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateRecordResponse'
+          description: Basic information for each Template returned from the query.
+      required:
+        - totalCount
+        - templates
+    TemplateRecordResponse:
+      properties:
+        name:
+          type: string
+          description: The display name for this template.
+        templateId:
+          type: integer
+          description: The associated ID for this template.
+        active:
+          type: boolean
+          description: True if this template is currently available for use.
+        alias:
+          type: string
+      required:
+        - name
+        - templateId
+        - active
+    TemplateDetailResponse:
+      properties:
+        name:
+          type: string
+          description: The display name for this template.
+        templateId:
+          type: integer
+          description: The associated ID for this template.
+        active:
+          type: boolean
+          description: True if this template is currently available for use.
+        htmlBody:
+          type: string
+          description: The content to use for the HtmlBody when this template is used to send email.
+        textBody:
+          type: string
+          description: The content to use for the TextBody when this template is used to send email.
+        subject:
+          type: string
+          description: The content to use for the Subject when this template is used to send email.
+        alias:
+          type: string
+      required:
+        - name
+        - templateId
+        - active
+        - htmlBody
+        - textBody
+        - subject
+    StandardResponse:
+      description: 'An API error.'
+      properties:
+        errorCode:
+          type: integer
+        message:
+          type: string
+    EmailRenderResponse:
+      description: A description of an email that should be sent
+      required:
+        - fromAddress
+        - fromDisplayName
+        - body
+        - subject
+      properties:
+        subject:
+          type: string
+          description: Email subject. MUST be max 120 characters, and not contain newline characters.
+          example: Hey Vinny, confirm your registration
+          # RFC 2822 section 2.1.1 says:
+          # There are two limits that this standard places on the number of
+          # characters in a line. Each line of characters MUST be no more than
+          # 998 characters, and SHOULD be no more than 78 characters, excluding
+          # the CRLF.
+          # If the subject becomes longer than 78 chars, we can still split the header over multiple lines.
+          # But GMail also does not do this in the subject line, so maybe we can afford ~120 chars without linebreaks, too.
+          # Nice email subjects arguably shorter, but that's up to the implementer.
+          maxLength: 120
+        fromDisplayName:
+          type: string
+          description: The name of the "From" header in the email notification.
+          example: Someone
+        fromAddress:
+          type: string
+          description: The address for the "From:" header
+          example: someone@example.com
+        body:
+          $ref: '#/components/schemas/MultipartBody'
+      additionalProperties: false
+    MultipartBody:
+      description: a multipart body consisting of both a plain and html part.
+      properties:
+        plain:
+          type: string
+          description: A (possibly multi-line) plain text that must be used as the plain multipart section
+        html:
+          type: string
+          description: The html formatted body represenation that must be used as the html multipart section
+      additionalProperties: false
